@@ -1,0 +1,106 @@
+# End-to-end MLOps workflow for the Wellness Tourism purchase prediction project.
+# Triggers on every push to main (CI/CD) and can be run manually.
+#
+# Required GitHub repository secrets:
+#   HF_TOKEN   — Hugging Face token (write)
+#   HF_USER    — Hugging Face username (used to build repo ids)
+#
+# Optional: set HF_DATASET_REPO, HF_MODEL_REPO, HF_SPACE_REPO as secrets if you
+# use non-default repository names.
+
+name: Wellness Tourism MLOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  register-dataset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r tourism_project/requirements.txt
+
+      - name: Ensure raw CSV in data folder
+        run: |
+          mkdir -p tourism_project/data
+          if [ -f tourism.csv ]; then cp tourism.csv tourism_project/data/; fi
+          if [ ! -f tourism_project/data/tourism.csv ]; then
+            echo "tourism_project/data/tourism.csv missing; add tourism.csv at repo root or under tourism_project/data/"
+            exit 1
+          fi
+
+      - name: Upload dataset to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ secrets.HF_USER }}
+        run: python tourism_project/model_building/data_register.py
+
+  data-prep:
+    needs: register-dataset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r tourism_project/requirements.txt
+
+      - name: Run data preparation
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ secrets.HF_USER }}
+        run: python tourism_project/model_building/prep.py
+
+  model-training:
+    needs: data-prep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r tourism_project/requirements.txt
+
+      - name: Train, tune, log MLflow, push model to Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ secrets.HF_USER }}
+        run: python tourism_project/model_building/train.py
+
+  deploy-hosting:
+    needs: model-training
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r tourism_project/requirements.txt
+
+      - name: Push deployment files to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USER: ${{ secrets.HF_USER }}
+        run: python tourism_project/hosting/hosting.py

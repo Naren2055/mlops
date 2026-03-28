@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.tourism_project_mlruns_check/
+tourism_project/mlruns/
+*.joblib
+.ipynb_checkpoints/
+.venv/
+venv/
