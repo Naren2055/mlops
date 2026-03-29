@@ -48,7 +48,7 @@ def _space_repo_id() -> str:
 def main() -> None:
     """
     Create the Space if missing, upload the deployment folder, and upload ``hf_http_config.py``
-    beside ``app.py`` when present so Streamlit can apply optional TLS settings.
+    to the Space repo root when present so Streamlit can apply optional TLS settings.
     """
     token = os.getenv("HF_TOKEN")
     if not token:

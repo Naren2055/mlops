@@ -2,8 +2,8 @@
 Streamlit UI for Wellness Tourism package purchase prediction: collect inputs,
 build one feature row, load the trained pipeline from the Hub, and show ``predict_proba``.
 
-Runs on port **8501** in the container, same as the case study (see ``README.md``
-``app_port``). The model loads on the first **Predict** click.
+Runs under ``src/streamlit_app.py`` in the Space image (see ``Dockerfile`` ``ENTRYPOINT``).
+The model loads on the first **Predict** click.
 
 Parameters
 ----------
@@ -14,7 +14,7 @@ HF_MODEL_FILENAME : str, optional
 HF_TOKEN : str, optional
     Set on the Space when the model repo is private or gated.
 HF_HUB_DISABLE_SSL_VERIFY : str, optional
-    Same as ``tourism_project/hf_http_config``; rarely needed on the Space.
+    Same as ``hf_http_config`` at the Space repo root; rarely needed on the Space.
 """
 
 from __future__ import annotations
@@ -51,13 +51,25 @@ CLASSIFICATION_THRESHOLD = 0.5
 def load_model():
     """
     Download and deserialize the ``joblib`` pipeline using ``MODEL_REPO`` and ``MODEL_FILE``.
+
+    Parameters
+    ----------
+    None
+        Uses ``MODEL_REPO``, ``MODEL_FILE``, and optional ``HF_TOKEN`` from the environment.
     """
     path = hf_hub_download(repo_id=MODEL_REPO, filename=MODEL_FILE)
     return joblib.load(path)
 
 
 def main() -> None:
-    """Render widgets, build ``input_row``, and on *Predict* run ``load_model`` and inference."""
+    """
+    Render widgets, build ``input_row``, and on *Predict* run ``load_model`` and inference.
+
+    Parameters
+    ----------
+    None
+        Reads widget state from Streamlit.
+    """
     st.title("Wellness Tourism Package — Purchase Prediction")
     st.write(
         "Predict whether a customer is likely to purchase the **Wellness Tourism "

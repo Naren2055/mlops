@@ -1,0 +1,10 @@
+# Keep Space build context tiny and avoid leaking junk into the image.
+__pycache__
+*.py[cod]
+*.egg-info
+.git
+.gitignore
+.env
+.venv
+*.md
+!README.md
