@@ -1,21 +1,14 @@
 """
-Train and tune an XGBoost model for Wellness Tourism package purchase prediction.
-
-Loads train/test splits from the Hugging Face dataset hub, builds a sklearn
-pipeline with scaling, one-hot encoding, and XGBoost, runs ``GridSearchCV``,
-logs every parameter combination and final metrics to MLflow (local file store),
-saves the best estimator to disk, and uploads it to a Hugging Face model repo.
-
-Environment variables
----------------------
+Parameters
+----------
 HF_TOKEN : str
-    Required for model hub upload.
-HF_USER : str
-    Username, unless ``HF_DATASET_REPO`` / ``HF_MODEL_REPO`` are set explicitly.
+    Required for creating the model repo and uploading the artifact.
+HF_USER : str, optional
+    Username for default dataset and model repo ids when overrides are not set.
 HF_DATASET_REPO : str, optional
-    Dataset repo containing ``Xtrain.csv`` etc.
+    Dataset id containing ``Xtrain.csv``, ``Xtest.csv``, ``ytrain.csv``, ``ytest.csv``.
 HF_MODEL_REPO : str, optional
-    Model repo id (default ``{HF_USER}/wellness-tourism-xgboost-model``).
+    Model id for the uploaded ``joblib`` file; default ``{HF_USER}/wellness-tourism-xgboost-model``.
 """
 
 from __future__ import annotations
@@ -36,7 +29,6 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# Must match ``prep.py`` feature definitions (kept local so this script runs standalone).
 NUMERIC_FEATURES = [
     "Age",
     "CityTier",
@@ -66,6 +58,7 @@ MODEL_FILENAME = "best_wellness_tourism_model.joblib"
 
 
 def _dataset_repo_id() -> str:
+    """Resolve the dataset repository id from ``HF_DATASET_REPO`` or ``HF_USER``."""
     explicit = os.getenv("HF_DATASET_REPO")
     if explicit:
         return explicit.strip()
@@ -78,6 +71,7 @@ def _dataset_repo_id() -> str:
 
 
 def _model_repo_id() -> str:
+    """Resolve the model repository id from ``HF_MODEL_REPO`` or ``HF_USER``."""
     explicit = os.getenv("HF_MODEL_REPO")
     if explicit:
         return explicit.strip()
@@ -89,20 +83,20 @@ def _model_repo_id() -> str:
     return f"{user}/wellness-tourism-xgboost-model"
 
 
-def _load_xy() -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    """Load X/y train and test from the Hub via ``hf://`` URIs."""
+def _load_xy() -> tuple[pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray]:
+    """Load train/test feature matrices and labels from the Hub via ``hf://`` URIs."""
     base = _dataset_repo_id()
     X_train = pd.read_csv(f"hf://datasets/{base}/Xtrain.csv")
     X_test = pd.read_csv(f"hf://datasets/{base}/Xtest.csv")
     y_train = pd.read_csv(f"hf://datasets/{base}/ytrain.csv").squeeze("columns")
     y_test = pd.read_csv(f"hf://datasets/{base}/ytest.csv").squeeze("columns")
+    y_train = np.asarray(y_train).ravel()
+    y_test = np.asarray(y_test).ravel()
     return X_train, X_test, y_train, y_test
 
 
 def main() -> None:
-    """
-    Hyperparameter search, MLflow logging, evaluation, and Hub model upload.
-    """
+    """Run grid search, MLflow logging, evaluation, ``joblib`` export, and Hub upload."""
     token = os.getenv("HF_TOKEN")
     if not token:
         raise ValueError("HF_TOKEN environment variable is required.")
@@ -112,8 +106,6 @@ def main() -> None:
     mlflow.set_experiment("wellness-tourism-xgboost")
 
     X_train, X_test, y_train, y_test = _load_xy()
-    y_train = np.asarray(y_train).ravel()
-    y_test = np.asarray(y_test).ravel()
     print(f"Train shape={X_train.shape}, Test shape={X_test.shape}")
 
     pos = (y_train == 1).sum()
@@ -131,7 +123,6 @@ def main() -> None:
     )
     model_pipeline = make_pipeline(preprocessor, xgb_model)
 
-    # Moderate grid: satisfies tuning + logging while keeping CI runs feasible.
     param_grid = {
         "xgbclassifier__n_estimators": [100],
         "xgbclassifier__max_depth": [3, 5],

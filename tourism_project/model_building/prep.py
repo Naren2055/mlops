@@ -1,16 +1,12 @@
 """
-Data preparation for the Wellness Tourism purchase prediction project.
-
-Loads the raw CSV from the Hugging Face dataset hub, cleans rows and columns,
-splits into train/test sets, saves CSV files locally under ``tourism_project/data``,
-and uploads those splits back to the same dataset repository.
-
-Environment variables
----------------------
+Parameters
+----------
 HF_TOKEN : str
-    Required for uploads.
-HF_USER or HF_DATASET_REPO : str
-    Same convention as ``data_register.py``.
+    Required for uploading split files to the Hub.
+HF_USER : str, optional
+    Hub username for default dataset id (see ``data_register``).
+HF_DATASET_REPO : str, optional
+    Full dataset id; overrides default built from ``HF_USER``.
 """
 
 from __future__ import annotations
@@ -28,7 +24,6 @@ DATA_DIR = ROOT / "data"
 TARGET_COL = "ProdTaken"
 DROP_COLS = {"CustomerID"}
 
-# Features used for modeling (all meaningful columns except target and IDs).
 NUMERIC_FEATURES = [
     "Age",
     "CityTier",
@@ -54,7 +49,7 @@ CATEGORICAL_FEATURES = [
 
 
 def _dataset_repo_id() -> str:
-    """Return Hugging Face dataset repo id (see ``data_register``)."""
+    """Resolve the dataset repository id from ``HF_DATASET_REPO`` or ``HF_USER``."""
     explicit = os.getenv("HF_DATASET_REPO")
     if explicit:
         return explicit.strip()
@@ -67,19 +62,19 @@ def _dataset_repo_id() -> str:
 
 
 def _hf_csv_uri(filename: str) -> str:
-    """Build ``hf://datasets/...`` URI for a file in the registered dataset."""
+    """
+    Build an ``hf://datasets/...`` URI for a file in the registered dataset.
+
+    Parameters
+    ----------
+    filename : str
+        File name inside the dataset repo (e.g. ``tourism.csv``).
+    """
     return f"hf://datasets/{_dataset_repo_id()}/{filename}"
 
 
 def load_raw_from_hub() -> pd.DataFrame:
-    """
-    Load ``tourism.csv`` from the Hugging Face dataset repository.
-
-    Returns
-    -------
-    pd.DataFrame
-        Raw table as stored on the Hub.
-    """
+    """Read ``tourism.csv`` from the Hub into a DataFrame."""
     path = _hf_csv_uri("tourism.csv")
     df = pd.read_csv(path)
     print(f"Loaded dataset from {path} shape={df.shape}.")
@@ -88,20 +83,14 @@ def load_raw_from_hub() -> pd.DataFrame:
 
 def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Drop identifiers, fix obvious data issues, and impute missing values.
+    Drop ID columns, impute missing values, and keep modeling columns plus target.
 
     Parameters
     ----------
     df : pd.DataFrame
-        Raw tourism table.
-
-    Returns
-    -------
-    pd.DataFrame
-        Cleaned table with only modeling columns (features + target).
+        Raw tourism table from ``tourism.csv``.
     """
     out = df.copy()
-    # Strip index column if present from CSV export
     unnamed = [c for c in out.columns if c.startswith("Unnamed")]
     if unnamed:
         out = out.drop(columns=unnamed)
@@ -120,7 +109,6 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     for col in CATEGORICAL_FEATURES:
         out[col] = out[col].fillna("Unknown").astype(str)
 
-    # Fix common data-entry typo so encodings align with deployment UI options.
     out["Gender"] = out["Gender"].replace({"Fe Male": "Female"})
 
     out = out[feature_cols + [TARGET_COL]].dropna(subset=[TARGET_COL])
@@ -129,9 +117,7 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
-    """
-    Run full prep: load from Hub, clean, split, save locally, upload splits.
-    """
+    """Run load, clean, stratified split, local save, and Hub upload of split CSVs."""
     token = os.getenv("HF_TOKEN")
     if not token:
         raise ValueError("HF_TOKEN environment variable is required for uploads.")

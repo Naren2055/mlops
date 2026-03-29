@@ -1,17 +1,12 @@
 """
-Push deployment assets to a Hugging Face Space (Docker / Streamlit frontend).
-
-Uploads every file under ``tourism_project/deployment`` to the configured Space
-repository so the public app can rebuild from the Dockerfile.
-
-Environment variables
----------------------
+Parameters
+----------
 HF_TOKEN : str
-    Required. Token with write access to Spaces.
+    Token with write access to Spaces (required).
+HF_USER : str, optional
+    Username; default Space id ``{HF_USER}/wellness-tourism-streamlit``.
 HF_SPACE_REPO : str, optional
-    Full Space repo id, default ``{HF_USER}/wellness-tourism-streamlit``.
-HF_USER : str
-    Required if ``HF_SPACE_REPO`` is not set.
+    Full Space id ``user/space-name``; overrides default built from ``HF_USER``.
 """
 
 from __future__ import annotations
@@ -27,14 +22,7 @@ DEPLOY_DIR = ROOT / "deployment"
 
 
 def _space_repo_id() -> str:
-    """
-    Resolve the Hugging Face Space repository id.
-
-    Returns
-    -------
-    str
-        Space repo id ``username/space-name``.
-    """
+    """Resolve the Space repository id from ``HF_SPACE_REPO`` or ``HF_USER``."""
     explicit = os.getenv("HF_SPACE_REPO")
     if explicit:
         return explicit.strip()
@@ -47,9 +35,7 @@ def _space_repo_id() -> str:
 
 
 def main() -> None:
-    """
-    Upload the deployment folder to the Hugging Face Space.
-    """
+    """Create the Space if missing and upload the deployment directory to it."""
     token = os.getenv("HF_TOKEN")
     if not token:
         raise ValueError("HF_TOKEN environment variable is required.")

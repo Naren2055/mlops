@@ -1,21 +1,12 @@
 """
-Register raw tourism data on the Hugging Face Hub (dataset repository).
-
-This script creates the dataset repo if missing and uploads every file under
-``tourism_project/data`` (for example ``tourism.csv``). It expects:
-
-- ``HF_TOKEN``: Hugging Face API token with write access.
-- ``HF_USER``: Your Hugging Face username (or set ``HF_DATASET_REPO`` to
-  ``username/repo-name`` explicitly).
-
-Environment variables
----------------------
+Parameters
+----------
 HF_TOKEN : str
-    Required. Token for ``huggingface_hub`` authentication.
+    Hugging Face API token with write access (required).
 HF_USER : str, optional
-    Hub username; dataset id becomes ``{HF_USER}/wellness-tourism-purchase``.
+    Hub username; target repo becomes ``{HF_USER}/wellness-tourism-purchase``.
 HF_DATASET_REPO : str, optional
-    Full dataset repo id; overrides the default built from ``HF_USER``.
+    Full dataset id ``user/repo``; overrides the default built from ``HF_USER``.
 """
 
 from __future__ import annotations
@@ -26,25 +17,12 @@ from pathlib import Path
 from huggingface_hub import HfApi, create_repo
 from huggingface_hub.utils import RepositoryNotFoundError
 
-# Project root: tourism_project/
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 
 
 def _dataset_repo_id() -> str:
-    """
-    Resolve the target Hugging Face dataset repository id.
-
-    Returns
-    -------
-    str
-        Dataset repo id in the form ``username/repo-name``.
-
-    Raises
-    ------
-    ValueError
-        If neither ``HF_DATASET_REPO`` nor ``HF_USER`` is set.
-    """
+    """Resolve the dataset repository id from ``HF_DATASET_REPO`` or ``HF_USER``."""
     explicit = os.getenv("HF_DATASET_REPO")
     if explicit:
         return explicit.strip()
@@ -57,14 +35,7 @@ def _dataset_repo_id() -> str:
 
 
 def main() -> None:
-    """
-    Ensure the dataset repository exists and upload the local ``data`` folder.
-
-    Raises
-    ------
-    FileNotFoundError
-        If ``tourism_project/data`` does not exist or contains no files.
-    """
+    """Ensure the Hub dataset exists and upload ``tourism_project/data`` to it."""
     token = os.getenv("HF_TOKEN")
     if not token:
         raise ValueError("HF_TOKEN environment variable is required for uploads.")
