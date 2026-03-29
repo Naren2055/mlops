@@ -8,7 +8,7 @@ The model loads on the first **Predict** click.
 Parameters
 ----------
 HF_MODEL_REPO : str, optional
-    Model Hub id for ``hf_hub_download``; default ``snarendrababu42/wellness-tourism-xgboost-model``.
+    Model Hub id for ``hf_hub_download``; default ``snarendrababu41/wellness-tourism-xgboost-model``.
 HF_MODEL_FILENAME : str, optional
     Artifact name inside that repo; default ``best_wellness_tourism_model.joblib``.
 HF_TOKEN : str, optional
@@ -41,7 +41,7 @@ from huggingface_hub import hf_hub_download
 
 MODEL_REPO = os.environ.get(
     "HF_MODEL_REPO",
-    "snarendrababu42/wellness-tourism-xgboost-model",
+    "snarendrababu41/wellness-tourism-xgboost-model",
 )
 MODEL_FILE = os.environ.get("HF_MODEL_FILENAME", "best_wellness_tourism_model.joblib")
 CLASSIFICATION_THRESHOLD = 0.5
