@@ -40,6 +40,7 @@ tourism_prediction_mlops_narendrababu_S.ipynb
 ## Space configuration (Docker only)
 
 - **SDK:** Space must be **Docker** (matches course template: Docker + Streamlit).
+- **Python:** The Space image uses **Python 3.10** (`python:3.10-slim`), matching **GitHub Actions** and reducing pickle / sklearn drift versus the trained `joblib` artifact.
 - **Port:** `deployment/Dockerfile` and `deployment/README.md` both use **`7860`**. `app_port` in `README.md` must match `--server.port` in the `Dockerfile` or the Space can stay stuck on **Starting**.
 - **Layout:** After `hosting.py`, the Space repo root must contain **`README.md`**, **`Dockerfile`**, **`requirements.txt`**, **`src/streamlit_app.py`**, and optionally **`hf_http_config.py`**.
 - **Secrets:** Space **Repository secrets** — `HF_MODEL_REPO` (and `HF_TOKEN` if the model repo is private).

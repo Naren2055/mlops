@@ -1,8 +1,9 @@
-# Pinned for Python 3.13.x (see Dockerfile FROM). Space image: linux/amd64 or arm64 wheels.
-numpy==2.2.4
-pandas==2.2.3
-huggingface_hub==0.34.4
+# Pinned for Python 3.10.x (matches GitHub Actions & training; see Dockerfile FROM).
+# Versions align with tourism_project/requirements.txt for joblib/sklearn/xgboost parity.
+numpy==2.2.2
+pandas==2.2.2
+huggingface_hub==0.32.6
 streamlit==1.45.0
 joblib==1.5.1
-scikit-learn==1.6.1
+scikit-learn==1.6.0
 xgboost==2.1.4
