@@ -1,20 +1,20 @@
 """
-Streamlit UI for Wellness Tourism package purchase prediction: collect inputs,
-build one feature row, load the trained pipeline from the Hub, and show ``predict_proba``.
+Wellness Tourism purchase prediction UI: collect features, load the trained pipeline
+from the Hugging Face Model Hub, and display ``predict_proba`` for class 1.
 
-Runs under ``src/streamlit_app.py`` in the Space image (see ``Dockerfile`` ``ENTRYPOINT``).
-The model loads on the first **Predict** click.
+The model is loaded lazily on **Predict** (or via **Load model only** in the sidebar).
+Use **Clear model cache** after changing Space secrets or uploading a new joblib.
 
 Parameters
 ----------
 HF_MODEL_REPO : str, optional
     Model Hub id for ``hf_hub_download``; default ``snarendrababu41/wellness-tourism-xgboost-model``.
 HF_MODEL_FILENAME : str, optional
-    Artifact name inside that repo; default ``best_wellness_tourism_model.joblib``.
+    Artifact filename in that repo; default ``best_wellness_tourism_model.joblib``.
 HF_TOKEN : str, optional
-    Set on the Space when the model repo is private or gated.
+    Required when the model repo is private or gated (set as a Space repository secret).
 HF_HUB_DISABLE_SSL_VERIFY : str, optional
-    Same as ``hf_http_config`` at the Space repo root; rarely needed on the Space.
+    If ``hf_http_config.py`` is present at the app root, optional TLS override for Hub calls.
 """
 
 from __future__ import annotations
@@ -39,94 +39,110 @@ import pandas as pd
 import streamlit as st
 from huggingface_hub import hf_hub_download
 
-MODEL_REPO = os.environ.get(
-    "HF_MODEL_REPO",
-    "snarendrababu41/wellness-tourism-xgboost-model",
-)
-MODEL_FILE = os.environ.get("HF_MODEL_FILENAME", "best_wellness_tourism_model.joblib")
+DEFAULT_MODEL_REPO = "snarendrababu41/wellness-tourism-xgboost-model"
+DEFAULT_MODEL_FILE = "best_wellness_tourism_model.joblib"
 CLASSIFICATION_THRESHOLD = 0.5
 
 
-@st.cache_resource
-def load_model():
+def _model_repo() -> str:
+    """Return the effective model Hub id from ``HF_MODEL_REPO`` or the built-in default."""
+    return os.environ.get("HF_MODEL_REPO", DEFAULT_MODEL_REPO).strip()
+
+
+def _model_filename() -> str:
+    """Return the joblib filename from ``HF_MODEL_FILENAME`` or the default."""
+    return os.environ.get("HF_MODEL_FILENAME", DEFAULT_MODEL_FILE).strip()
+
+
+@st.cache_resource(show_spinner="Downloading model from the Hub…")
+def load_model(repo_id: str, filename: str):
     """
-    Download and deserialize the ``joblib`` pipeline using ``MODEL_REPO`` and ``MODEL_FILE``.
+    Download and deserialize the joblib pipeline for the given Hub repo and file.
 
     Parameters
     ----------
-    None
-        Uses ``MODEL_REPO``, ``MODEL_FILE``, and optional ``HF_TOKEN`` from the environment.
+    repo_id : str
+        Hugging Face model repository id (``user/repo``).
+    filename : str
+        Path of the artifact inside that repository.
+
+    Returns
+    -------
+    object
+        Deserialized sklearn pipeline (supports ``predict_proba``).
     """
-    path = hf_hub_download(repo_id=MODEL_REPO, filename=MODEL_FILE)
+    path = hf_hub_download(repo_id=repo_id, filename=filename)
     return joblib.load(path)
 
 
-def main() -> None:
+def _build_input_row(
+    age: float,
+    city_tier: int,
+    duration_pitch: float,
+    n_visiting: int,
+    n_followups: float,
+    product_pitched: str,
+    pref_star: float,
+    marital: str,
+    n_trips: float,
+    passport: int,
+    pitch_score: int,
+    own_car: int,
+    n_children: float,
+    designation: str,
+    monthly_income: float,
+    type_contact: str,
+    occupation: str,
+    gender: str,
+) -> pd.DataFrame:
     """
-    Render widgets, build ``input_row``, and on *Predict* run ``load_model`` and inference.
+    Assemble a single-row feature ``DataFrame`` matching training column names.
 
     Parameters
     ----------
-    None
-        Reads widget state from Streamlit.
+    age : float
+        Customer age in years.
+    city_tier : int
+        City tier (1–3).
+    duration_pitch : float
+        Pitch duration in minutes.
+    n_visiting : int
+        Number of persons visiting.
+    n_followups : float
+        Number of follow-ups.
+    product_pitched : str
+        Product category pitched.
+    pref_star : float
+        Preferred property star rating.
+    marital : str
+        Marital status label.
+    n_trips : float
+        Number of trips per year.
+    passport : int
+        Binary passport indicator (0/1).
+    pitch_score : int
+        Pitch satisfaction score (1–5).
+    own_car : int
+        Binary car ownership (0/1).
+    n_children : float
+        Children under 5 visiting.
+    designation : str
+        Job designation label.
+    monthly_income : float
+        Monthly income.
+    type_contact : str
+        Type of contact (e.g. Self Enquiry).
+    occupation : str
+        Occupation category.
+    gender : str
+        Gender label.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row with columns aligned to the training schema.
     """
-    st.title("Wellness Tourism Package — Purchase Prediction")
-    st.write(
-        "Predict whether a customer is likely to purchase the **Wellness Tourism "
-        "Package** (Visit with Us) from profile and sales-interaction attributes."
-    )
-    st.caption(
-        f"Model repo: `{MODEL_REPO}` · file: `{MODEL_FILE}` · "
-        "The first *Predict* may take longer while the artifact downloads."
-    )
-
-    st.subheader("Customer and interaction inputs")
-
-    age = st.number_input("Age", min_value=18.0, max_value=100.0, value=35.0)
-    city_tier = st.selectbox("City tier", [1, 2, 3], index=0)
-    duration_pitch = st.number_input(
-        "Duration of pitch (minutes)", min_value=0.0, value=10.0
-    )
-    n_visiting = st.number_input("Number of persons visiting", min_value=1, value=2)
-    n_followups = st.number_input("Number of follow-ups", min_value=0.0, value=3.0)
-    product_pitched = st.selectbox(
-        "Product pitched",
-        ["Basic", "Deluxe", "Standard", "Super Deluxe", "King"],
-    )
-    pref_star = st.number_input(
-        "Preferred property star", min_value=1.0, max_value=5.0, value=3.0
-    )
-    marital = st.selectbox(
-        "Marital status",
-        ["Single", "Married", "Divorced", "Unmarried"],
-    )
-    n_trips = st.number_input("Number of trips per year", min_value=0.0, value=2.0)
-    passport = st.selectbox(
-        "Passport", [0, 1], format_func=lambda x: "Yes" if x else "No"
-    )
-    pitch_score = st.slider("Pitch satisfaction score", 1, 5, 3)
-    own_car = st.selectbox(
-        "Owns car", [0, 1], format_func=lambda x: "Yes" if x else "No"
-    )
-    n_children = st.number_input(
-        "Children under 5 visiting", min_value=0.0, value=0.0
-    )
-    designation = st.selectbox(
-        "Designation",
-        ["Executive", "Manager", "Senior Manager", "AVP", "VP"],
-    )
-    monthly_income = st.number_input("Monthly income", min_value=0.0, value=20000.0)
-    type_contact = st.selectbox(
-        "Type of contact",
-        ["Self Enquiry", "Company Invited"],
-    )
-    occupation = st.selectbox(
-        "Occupation",
-        ["Salaried", "Free Lancer", "Small Business", "Large Business"],
-    )
-    gender = st.selectbox("Gender", ["Male", "Female"])
-
-    input_row = pd.DataFrame(
+    return pd.DataFrame(
         [
             {
                 "Age": age,
@@ -151,26 +167,170 @@ def main() -> None:
         ]
     )
 
-    if st.button("Predict"):
-        try:
-            with st.spinner(
-                "Loading model and predicting (first run downloads from the Hub)..."
-            ):
-                model = load_model()
-                proba = float(model.predict_proba(input_row)[0, 1])
-        except Exception as exc:  # noqa: BLE001
-            st.error(
-                f"Could not load or run the model from `{MODEL_REPO}` / `{MODEL_FILE}`. "
-                "Set Space secret `HF_MODEL_REPO` (and `HF_TOKEN` if the repo is private). "
-                f"Details: {exc}"
+
+def main() -> None:
+    """
+    Render the app: sidebar for testing helpers, form inputs, and prediction output.
+
+    Parameters
+    ----------
+    None
+        Reads environment variables and Streamlit widget state.
+    """
+    st.set_page_config(
+        page_title="Wellness Tourism — Purchase prediction",
+        page_icon="🧳",
+        layout="wide",
+    )
+
+    repo = _model_repo()
+    artifact = _model_filename()
+    token_set = bool(os.environ.get("HF_TOKEN", "").strip())
+
+    with st.sidebar:
+        st.header("Testing")
+        st.markdown(
+            "Use this panel to confirm Hub settings and refresh the model after "
+            "you change Space secrets or upload a new artifact."
+        )
+        st.text_input("Resolved `HF_MODEL_REPO`", value=repo, disabled=True)
+        st.text_input("Resolved `HF_MODEL_FILENAME`", value=artifact, disabled=True)
+        st.caption(f"`HF_TOKEN` secret: **{'set' if token_set else 'not set'}**")
+        if st.button("Clear model cache", type="secondary"):
+            load_model.clear()
+            st.success("Cache cleared. Run **Predict** or **Load model only** again.")
+        if st.button("Load model only", type="primary"):
+            try:
+                _ = load_model(repo, artifact)
+                st.success("Model downloaded and loaded OK.")
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Load failed: {exc}")
+        with st.expander("Checklist"):
+            st.markdown(
+                """
+                - [ ] Space secret **`HF_MODEL_REPO`** = your `user/wellness-tourism-xgboost-model`
+                - [ ] If repo is **private**: **`HF_TOKEN`** (read) is set on the Space
+                - [ ] Artifact **`best_wellness_tourism_model.joblib`** exists on that repo
+                - [ ] After changing secrets, click **Clear model cache**
+                """
             )
+
+    st.title("Wellness Tourism Package — Purchase prediction")
+    st.write(
+        "Estimate whether a customer is likely to purchase the **Wellness Tourism "
+        "Package** (Visit with Us) from profile and pitch attributes."
+    )
+
+    left, right = st.columns((2, 1))
+    with left:
+        st.subheader("Inputs")
+        c1, c2 = st.columns(2)
+        with c1:
+            age = st.number_input("Age", min_value=18.0, max_value=100.0, value=35.0)
+            city_tier = st.selectbox("City tier", [1, 2, 3], index=0)
+            duration_pitch = st.number_input(
+                "Duration of pitch (minutes)", min_value=0.0, value=10.0
+            )
+            n_visiting = st.number_input(
+                "Number of persons visiting", min_value=1, value=2
+            )
+            n_followups = st.number_input(
+                "Number of follow-ups", min_value=0.0, value=3.0
+            )
+            product_pitched = st.selectbox(
+                "Product pitched",
+                ["Basic", "Deluxe", "Standard", "Super Deluxe", "King"],
+            )
+            pref_star = st.number_input(
+                "Preferred property star", min_value=1.0, max_value=5.0, value=3.0
+            )
+            marital = st.selectbox(
+                "Marital status",
+                ["Single", "Married", "Divorced", "Unmarried"],
+            )
+            n_trips = st.number_input(
+                "Number of trips per year", min_value=0.0, value=2.0
+            )
+        with c2:
+            passport = st.selectbox(
+                "Passport", [0, 1], format_func=lambda x: "Yes" if x else "No"
+            )
+            pitch_score = st.slider("Pitch satisfaction score", 1, 5, 3)
+            own_car = st.selectbox(
+                "Owns car", [0, 1], format_func=lambda x: "Yes" if x else "No"
+            )
+            n_children = st.number_input(
+                "Children under 5 visiting", min_value=0.0, value=0.0
+            )
+            designation = st.selectbox(
+                "Designation",
+                ["Executive", "Manager", "Senior Manager", "AVP", "VP"],
+            )
+            monthly_income = st.number_input(
+                "Monthly income", min_value=0.0, value=20000.0
+            )
+            type_contact = st.selectbox(
+                "Type of contact",
+                ["Self Enquiry", "Company Invited"],
+            )
+            occupation = st.selectbox(
+                "Occupation",
+                ["Salaried", "Free Lancer", "Small Business", "Large Business"],
+            )
+            gender = st.selectbox("Gender", ["Male", "Female"])
+
+        input_row = _build_input_row(
+            age,
+            city_tier,
+            duration_pitch,
+            n_visiting,
+            n_followups,
+            product_pitched,
+            pref_star,
+            marital,
+            n_trips,
+            passport,
+            pitch_score,
+            own_car,
+            n_children,
+            designation,
+            monthly_income,
+            type_contact,
+            occupation,
+            gender,
+        )
+
+        predict = st.button("Predict", type="primary")
+
+    with right:
+        st.subheader("Result")
+        if predict:
+            try:
+                with st.spinner("Loading model and scoring…"):
+                    model = load_model(repo, artifact)
+                    proba = float(model.predict_proba(input_row)[0, 1])
+            except Exception as exc:  # noqa: BLE001
+                st.error("Prediction failed.")
+                st.code(str(exc), language="text")
+                with st.expander("Full traceback (for debugging)"):
+                    st.exception(exc)
+                st.info(
+                    "Verify Space secrets **`HF_MODEL_REPO`** / **`HF_TOKEN`**, "
+                    "then **Clear model cache** and retry."
+                )
+            else:
+                pred = int(proba >= CLASSIFICATION_THRESHOLD)
+                label = "Likely buyer (1)" if pred else "Unlikely buyer (0)"
+                st.metric("P(purchase)", f"{proba:.2%}")
+                st.success(
+                    f"Predicted class: **{label}** (threshold {CLASSIFICATION_THRESHOLD})."
+                )
         else:
-            pred = int(proba >= CLASSIFICATION_THRESHOLD)
-            label = "Likely buyer (1)" if pred else "Unlikely buyer (0)"
-            st.success(
-                f"Estimated probability of purchase: **{proba:.2%}** — "
-                f"predicted class: **{label}**."
-            )
+            st.caption("Adjust inputs and click **Predict**.")
+
+        with st.expander("Feature row (debug)"):
+            st.dataframe(input_row, use_container_width=True)
 
 
-main()
+if __name__ == "__main__":
+    main()
