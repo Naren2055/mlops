@@ -1,5 +1,5 @@
 ---
-title: Wellness Tourism Purchase Predictor
+title: "Wellness Tourism Purchase Predictor"
 emoji: 🧳
 colorFrom: blue
 colorTo: indigo
@@ -20,3 +20,7 @@ On **Docker** Spaces, the Hub often **does not stream** output inside a `RUN` un
 - Check [Hugging Face status](https://status.huggingface.co/) for incidents or queue delays.
 
 If builds are repeatedly slow, open **Space → Settings → Dev mode** (if available) or build the same `Dockerfile` locally with `docker build` to see full `pip` output.
+
+### App stuck on “Starting” after a successful build?
+
+The container **must** bind Streamlit to **`0.0.0.0`** (see `Dockerfile` `ENTRYPOINT`) and **`app_port`** above must be **`8501`**. If either is wrong, the Hub proxy cannot reach the process. Set Space secret **`HF_MODEL_REPO`** to your model repo id so `hf_hub_download` can fetch the joblib file.

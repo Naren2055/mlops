@@ -6,3 +6,6 @@ tourism_project/mlruns/
 .ipynb_checkpoints/
 .venv/
 venv/
+
+# Staged only during hosting upload (see hosting.py); do not commit.
+tourism_project/deployment/hf_http_config.py
