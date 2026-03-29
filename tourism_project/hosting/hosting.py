@@ -7,7 +7,7 @@ Parameters
 HF_TOKEN : str
     Token with write access to Spaces (required).
 HF_USER : str, optional
-    Username; default Space id ``{HF_USER}/wellness_tourism_streamlit``.
+    Username; default Space id ``{HF_USER}/wellness-tourism-streamlit``.
 HF_SPACE_REPO : str, optional
     Full Space id ``user/space-name``; overrides default built from ``HF_USER``.
 """
@@ -45,7 +45,7 @@ def _space_repo_id() -> str:
         raise ValueError(
             "Set HF_USER (username) or HF_SPACE_REPO (full Space repo id)."
         )
-    return f"{user}/wellness_tourism_streamlit"
+    return f"{user}/wellness-tourism-streamlit"
 
 
 def main() -> None:
