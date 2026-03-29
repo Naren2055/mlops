@@ -17,7 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8501
+# Hugging Face Docker Spaces default app_port is 7860 (see Hub docs). Using 7860 avoids
+# routing/health-check mismatches if README frontmatter is ignored or cached wrong.
+EXPOSE 7860
 
 # fileWatcherType=none saves CPU on read-only / ephemeral filesystems (common on Spaces).
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableXsrfProtection=false", "--server.fileWatcherType", "none", "--browser.gatherUsageStats", "false"]
+CMD ["streamlit", "run", "app.py", "--server.port=7860", "--server.address=0.0.0.0", "--server.enableXsrfProtection=false", "--server.fileWatcherType", "none", "--browser.gatherUsageStats", "false"]

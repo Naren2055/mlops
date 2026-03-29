@@ -37,8 +37,31 @@ tourism_prediction_mlops_narendrababu_S.ipynb
 
 ## Space configuration
 
-- **`tourism_project/deployment/README.md`** must stay in the Space repo: it sets Hugging Face **Docker** metadata and **`app_port: 8501`** so routing matches Streamlit. Without it, the Space can stay stuck on “Starting” after a successful build.
-- In the Space **Settings → Repository secrets**, set **`HF_MODEL_REPO`** to your model repo (e.g. `username/wellness-tourism-xgboost-model`) so `app.py` can download `best_wellness_tourism_model.joblib`. Use **`HF_TOKEN`** if the model repo is private.
+### Docker Space (default in this repo)
+
+- **Port:** Hugging Face’s Docker default is **`app_port: 7860`**. The Dockerfile runs Streamlit on **7860** and `deployment/README.md` sets the same `app_port`. If the app listens on 8501 while the platform expects 7860, the Space often stays **“Starting”** forever after a successful build.
+- **`README.md` must be at the root of the Space repository** (same level as `Dockerfile` and `app.py`). `hosting.py` uploads the whole `deployment/` folder, which is correct.
+- **Secrets:** set **`HF_MODEL_REPO`** (and **`HF_TOKEN`** if the model is private) under Space **Settings → Repository secrets**.
+
+### Alternative: native Streamlit Space (no Docker)
+
+If Docker keeps failing provisioning, use Hugging Face’s **Streamlit SDK** (HF runs Streamlit for you on port **8501**; no `Dockerfile`).
+
+1. On the Space: **Settings → Change Space SDK** → choose **Streamlit** (or create a new Space with SDK **Streamlit**).
+2. In the Space repo, keep only **`app.py`**, **`requirements.txt`**, and **`README.md`** with a YAML block like:
+
+   ```yaml
+   ---
+   title: Wellness Tourism Purchase Predictor
+   sdk: streamlit
+   sdk_version: 1.43.2
+   ---
+   ```
+
+3. **Remove** `Dockerfile` from that Space repo (Streamlit Spaces should not use a custom Docker image unless you know you need it).
+4. Rebuild / open the App tab.
+
+You still need the same **Repository secrets** (`HF_MODEL_REPO`, etc.). The **course rubric** asks for a Dockerfile in the project: keep `tourism_project/deployment/Dockerfile` in **GitHub** even if you deploy the Space using the Streamlit SDK for reliability.
 
 ## Local / notebook
 

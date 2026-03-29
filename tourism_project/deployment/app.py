@@ -6,7 +6,7 @@ Model Hub, collects user inputs aligned with training features, and displays
 predicted probability of purchase.
 
 Model loading is **lazy** (on first Predict click) so the first Streamlit run
-finishes quickly and Hugging Face health checks see a live server on port 8501.
+finishes quickly. The Docker Space listens on **port 7860** (Hugging Face default for ``sdk: docker``).
 """
 
 from __future__ import annotations
