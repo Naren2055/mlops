@@ -45,7 +45,7 @@ def _space_repo_id() -> str:
         raise ValueError(
             "Set HF_USER (username) or HF_SPACE_REPO (full Space repo id)."
         )
-    return f"{user}/wellness-tourism-streamlit"
+    return f"{user}/wellness_tourism_streamlit"
 
 
 def main() -> None:
