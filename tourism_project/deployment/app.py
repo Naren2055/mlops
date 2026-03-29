@@ -26,7 +26,7 @@ from huggingface_hub import hf_hub_download
 
 MODEL_REPO = os.environ.get(
     "HF_MODEL_REPO",
-    "YOUR_HF_USERNAME/wellness-tourism-xgboost-model",
+    "snarendrababu42/wellness-tourism-xgboost-model",
 )
 MODEL_FILE = os.environ.get("HF_MODEL_FILENAME", "best_wellness_tourism_model.joblib")
 CLASSIFICATION_THRESHOLD = 0.5
