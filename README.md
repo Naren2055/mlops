@@ -37,7 +37,8 @@ tourism_prediction_mlops_narendrababu_S.ipynb
 
 ## Space configuration
 
-In the Space **Settings → Repository secrets**, set `HF_MODEL_REPO` to your model repo (e.g. `username/wellness-tourism-xgboost-model`) so `app.py` can download `best_wellness_tourism_model.joblib`.
+- **`tourism_project/deployment/README.md`** must stay in the Space repo: it sets Hugging Face **Docker** metadata and **`app_port: 8501`** so routing matches Streamlit. Without it, the Space can stay stuck on “Starting” after a successful build.
+- In the Space **Settings → Repository secrets**, set **`HF_MODEL_REPO`** to your model repo (e.g. `username/wellness-tourism-xgboost-model`) so `app.py` can download `best_wellness_tourism_model.joblib`. Use **`HF_TOKEN`** if the model repo is private.
 
 ## Local / notebook
 

@@ -4,6 +4,9 @@ Streamlit frontend for the Wellness Tourism package purchase predictor.
 Loads the trained sklearn pipeline (preprocessor + XGBoost) from the Hugging Face
 Model Hub, collects user inputs aligned with training features, and displays
 predicted probability of purchase.
+
+Model loading is **lazy** (on first Predict click) so the first Streamlit run
+finishes quickly and Hugging Face health checks see a live server on port 8501.
 """
 
 from __future__ import annotations
@@ -36,9 +39,23 @@ def load_model():
     Notes
     -----
     Uses ``hf_hub_download`` so the Space does not need the model committed in git.
+    ``huggingface_hub`` reads ``HF_TOKEN`` from the environment when the model
+    repo is private or gated.
     """
     path = hf_hub_download(repo_id=MODEL_REPO, filename=MODEL_FILE)
     return joblib.load(path)
+
+
+def _get_model():
+    """
+    Return a cached loaded model, or raise with context for the UI.
+
+    Returns
+    -------
+    object
+        Fitted sklearn pipeline.
+    """
+    return load_model()
 
 
 def main() -> None:
@@ -49,16 +66,10 @@ def main() -> None:
         "**Wellness Tourism Package** (Visit with Us), based on profile and "
         "sales-interaction attributes."
     )
-
-    try:
-        model = load_model()
-    except Exception as exc:  # noqa: BLE001 — show friendly message in UI
-        st.error(
-            f"Could not load model from `{MODEL_REPO}`. "
-            f"Set Space secrets / variables `HF_MODEL_REPO` and ensure the file "
-            f"`{MODEL_FILE}` exists. Details: {exc}"
-        )
-        st.stop()
+    st.caption(
+        f"Model repo: `{MODEL_REPO}` · artifact: `{MODEL_FILE}` · "
+        "First prediction may take a minute while the model downloads from the Hub."
+    )
 
     st.subheader("Customer & interaction inputs")
 
@@ -122,13 +133,23 @@ def main() -> None:
     )
 
     if st.button("Predict"):
-        proba = float(model.predict_proba(row)[0, 1])
-        pred = int(proba >= 0.5)
-        st.success(
-            f"Estimated probability of purchase: **{proba:.2%}** — "
-            f"predicted class: **{'Likely buyer (1)' if pred else 'Unlikely buyer (0)'}**."
-        )
+        try:
+            with st.spinner("Loading model and running prediction (first run downloads from Hub)..."):
+                model = _get_model()
+                proba = float(model.predict_proba(row)[0, 1])
+        except Exception as exc:  # noqa: BLE001
+            st.error(
+                f"Could not load or run the model from `{MODEL_REPO}` / `{MODEL_FILE}`. "
+                f"Set Space secret `HF_MODEL_REPO` if needed, and `HF_TOKEN` if the repo is private. "
+                f"Details: {exc}"
+            )
+        else:
+            pred = int(proba >= 0.5)
+            st.success(
+                f"Estimated probability of purchase: **{proba:.2%}** — "
+                f"predicted class: **{'Likely buyer (1)' if pred else 'Unlikely buyer (0)'}**."
+            )
 
 
-if __name__ == "__main__":
-    main()
+# Streamlit runs the script top-to-bottom on each rerun; keep entrypoint explicit.
+main()
