@@ -15,7 +15,7 @@ tourism_project/
     train.py                     # GridSearch + MLflow + model upload
   deployment/
     Dockerfile
-    README.md                    # YAML: sdk docker, app_port 8501 (case study port)
+    README.md                    # YAML: sdk docker, app_port 7860 (HF-friendly port)
     requirements.txt
     src/
       streamlit_app.py           # Streamlit; Hub download + DataFrame + predict_proba
@@ -40,10 +40,10 @@ tourism_prediction_mlops_narendrababu_S.ipynb
 ## Space configuration (Docker only)
 
 - **SDK:** Space must be **Docker** (matches course template: Docker + Streamlit).
-- **Port:** `deployment/Dockerfile` and `deployment/README.md` both use **`8501`**, matching the **Case_Study_MLOps** notebooks. `app_port` in `README.md` must match `--server.port` in the `Dockerfile` or the Space can stay stuck on **Starting**.
+- **Port:** `deployment/Dockerfile` and `deployment/README.md` both use **`7860`**. `app_port` in `README.md` must match `--server.port` in the `Dockerfile` or the Space can stay stuck on **Starting**.
 - **Layout:** After `hosting.py`, the Space repo root must contain **`README.md`**, **`Dockerfile`**, **`requirements.txt`**, **`src/streamlit_app.py`**, and optionally **`hf_http_config.py`**.
 - **Secrets:** Space **Repository secrets** — `HF_MODEL_REPO` (and `HF_TOKEN` if the model repo is private).
-- **Verify deploy:** Run `python tourism_project/hosting/hosting.py` after a green CI run (or from the notebook). On the Space, **README** must show `sdk: docker` and **`app_port: 8501`**, and the repo must contain **`Dockerfile`**, **`requirements.txt`**, **`src/streamlit_app.py`**, and **`hf_http_config.py`** (staged automatically by `hosting.py`).
+- **Verify deploy:** Run `python tourism_project/hosting/hosting.py` after a green CI run (or from the notebook). On the Space, **README** must show `sdk: docker` and **`app_port: 7860`**, and the repo must contain **`Dockerfile`**, **`requirements.txt`**, **`src/streamlit_app.py`**, and **`hf_http_config.py`** (staged automatically by `hosting.py`).
 
 ## Local / notebook
 

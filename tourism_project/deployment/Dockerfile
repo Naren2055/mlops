@@ -1,4 +1,4 @@
-# Hugging Face Space (Docker SDK): listen on 0.0.0.0:8501 (must match README app_port).
+# Hugging Face Space (Docker SDK): listen on 0.0.0.0:7860 (must match README app_port).
 # - curl: HEALTHCHECK
 # - libgomp1: XGBoost shared library on Debian slim
 # Build logs often stay empty until each RUN layer completes (pip can take many minutes).
@@ -29,11 +29,11 @@ RUN echo "=== HF build: pip install start ===" \
 
 COPY . .
 
-EXPOSE 8501
+EXPOSE 7860
 
 # Requires curl (installed above). start-period allows Streamlit to boot before first check.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
-    CMD curl --fail --silent http://127.0.0.1:8501/_stcore/health || exit 1
+    CMD curl --fail --silent http://127.0.0.1:7860/_stcore/health || exit 1
 
 # --server.address=0.0.0.0 is required: otherwise Streamlit binds to localhost only and the Space proxy cannot reach the app.
-ENTRYPOINT ["streamlit", "run", "src/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableXsrfProtection=false", "--server.fileWatcherType", "none", "--browser.gatherUsageStats", "false"]
+ENTRYPOINT ["streamlit", "run", "src/streamlit_app.py", "--server.port=7860", "--server.address=0.0.0.0", "--server.enableXsrfProtection=false", "--server.fileWatcherType", "none", "--browser.gatherUsageStats", "false"]
