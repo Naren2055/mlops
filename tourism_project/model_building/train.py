@@ -1,4 +1,7 @@
 """
+Tune an XGBoost pipeline on Hub-hosted train/test CSVs, log runs to MLflow, and
+upload the best ``joblib`` model to the Hugging Face Model Hub.
+
 Parameters
 ----------
 HF_TOKEN : str
@@ -9,12 +12,27 @@ HF_DATASET_REPO : str, optional
     Dataset id containing ``Xtrain.csv``, ``Xtest.csv``, ``ytrain.csv``, ``ytest.csv``.
 HF_MODEL_REPO : str, optional
     Model id for the uploaded ``joblib`` file; default ``{HF_USER}/wellness-tourism-xgboost-model``.
+
+Notes
+-----
+On **macOS**, the pip XGBoost wheel needs OpenMP (``libomp.dylib``). Run ``brew install libomp``.
+The formula is *keg-only*, so XGBoost often cannot find the library unless you also run
+``brew link libomp --force`` (or start Python with ``DYLD_LIBRARY_PATH`` set to
+``$(brew --prefix)/opt/libomp/lib``). Linux CI images typically already ship compatible OpenMP.
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+_tp = Path(__file__).resolve().parents[1]
+if str(_tp) not in sys.path:
+    sys.path.insert(0, str(_tp))
+import hf_http_config
+
+hf_http_config.apply_hf_http_settings()
 
 import joblib
 import mlflow

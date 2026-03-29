@@ -8,16 +8,31 @@ Runs on port **8501** in the container, same as the case study (see ``README.md`
 Parameters
 ----------
 HF_MODEL_REPO : str, optional
-    Model Hub id for ``hf_hub_download``; default ``YOUR_HF_USERNAME/wellness-tourism-xgboost-model``.
+    Model Hub id for ``hf_hub_download``; default ``snarendrababu42/wellness-tourism-xgboost-model``.
 HF_MODEL_FILENAME : str, optional
     Artifact name inside that repo; default ``best_wellness_tourism_model.joblib``.
 HF_TOKEN : str, optional
     Set on the Space when the model repo is private or gated.
+HF_HUB_DISABLE_SSL_VERIFY : str, optional
+    Same as ``tourism_project/hf_http_config``; rarely needed on the Space.
 """
 
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
+
+_script_dir = Path(__file__).resolve().parent
+for _root in (_script_dir.parent, _script_dir):
+    _cfg = _root / "hf_http_config.py"
+    if _cfg.is_file():
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+        import hf_http_config
+
+        hf_http_config.apply_hf_http_settings()
+        break
 
 import joblib
 import pandas as pd

@@ -1,4 +1,9 @@
 """
+Upload raw files under ``tourism_project/data`` to a public Hugging Face Dataset.
+
+Creates the dataset repository when it does not exist, then syncs the local data
+folder to that repo.
+
 Parameters
 ----------
 HF_TOKEN : str
@@ -7,12 +12,22 @@ HF_USER : str, optional
     Hub username; target repo becomes ``{HF_USER}/wellness-tourism-purchase``.
 HF_DATASET_REPO : str, optional
     Full dataset id ``user/repo``; overrides the default built from ``HF_USER``.
+HF_HUB_DISABLE_SSL_VERIFY : str, optional
+    See ``tourism_project/hf_http_config.py``; opt-in to skip TLS verify for Hub calls.
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+_tp = Path(__file__).resolve().parents[1]
+if str(_tp) not in sys.path:
+    sys.path.insert(0, str(_tp))
+import hf_http_config
+
+hf_http_config.apply_hf_http_settings()
 
 from huggingface_hub import HfApi, create_repo
 from huggingface_hub.utils import RepositoryNotFoundError

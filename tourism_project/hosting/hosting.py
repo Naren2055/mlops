@@ -1,4 +1,7 @@
 """
+Upload ``tourism_project/deployment`` to a Hugging Face Space (Docker SDK) so the
+Streamlit image can build from the Dockerfile.
+
 Parameters
 ----------
 HF_TOKEN : str
@@ -12,7 +15,15 @@ HF_SPACE_REPO : str, optional
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+_tp = Path(__file__).resolve().parents[1]
+if str(_tp) not in sys.path:
+    sys.path.insert(0, str(_tp))
+import hf_http_config
+
+hf_http_config.apply_hf_http_settings()
 
 from huggingface_hub import HfApi, create_repo
 from huggingface_hub.utils import RepositoryNotFoundError
@@ -35,7 +46,10 @@ def _space_repo_id() -> str:
 
 
 def main() -> None:
-    """Create the Space if missing and upload the deployment directory to it."""
+    """
+    Create the Space if missing, upload the deployment folder, and upload ``hf_http_config.py``
+    beside ``app.py`` when present so Streamlit can apply optional TLS settings.
+    """
     token = os.getenv("HF_TOKEN")
     if not token:
         raise ValueError("HF_TOKEN environment variable is required.")
@@ -63,6 +77,16 @@ def main() -> None:
         repo_type="space",
         path_in_repo="",
     )
+    hf_cfg = ROOT / "hf_http_config.py"
+    if hf_cfg.is_file():
+        api.upload_file(
+            path_or_fileobj=str(hf_cfg),
+            path_in_repo="hf_http_config.py",
+            repo_id=repo_id,
+            repo_type="space",
+            token=token,
+        )
+        print(f"Uploaded {hf_cfg.name} to Space root.")
     print(f"Uploaded {DEPLOY_DIR} to Space {repo_id}.")
 
 

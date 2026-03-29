@@ -1,4 +1,7 @@
 """
+Load ``tourism.csv`` from the Hub, clean features, split train/test, save CSVs locally,
+and upload the split files back to the same Dataset repository.
+
 Parameters
 ----------
 HF_TOKEN : str
@@ -12,7 +15,15 @@ HF_DATASET_REPO : str, optional
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+_tp = Path(__file__).resolve().parents[1]
+if str(_tp) not in sys.path:
+    sys.path.insert(0, str(_tp))
+import hf_http_config
+
+hf_http_config.apply_hf_http_settings()
 
 import pandas as pd
 from huggingface_hub import HfApi
