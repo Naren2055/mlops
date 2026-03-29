@@ -30,7 +30,7 @@ tourism_prediction_mlops_narendrababu_S.ipynb
 |---------|----------------------------------------|
 | Dataset | `USER/wellness-tourism-purchase`       |
 | Model   | `USER/wellness-tourism-xgboost-model`  |
-| Space   | `USER/wellness-tourism-streamlit`      |
+| Space   | `USER/wellness_tourism_streamlit`      |
 
 ## GitHub Actions secrets
 

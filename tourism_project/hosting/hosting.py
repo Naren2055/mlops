@@ -7,7 +7,7 @@ Parameters
 HF_TOKEN : str
     Token with write access to Spaces (required).
 HF_USER : str, optional
-    Username; default Space id ``{HF_USER}/wellness-tourism-streamlit``.
+    Username; default Space id ``{HF_USER}/wellness_tourism_streamlit``.
 HF_SPACE_REPO : str, optional
     Full Space id ``user/space-name``; overrides default built from ``HF_USER``.
 """
